@@ -7,15 +7,18 @@ import streamlit as st
 import requests
 import zipfile
 import io
+import tempfile
 
 # Download and extract JSON files
 url = "https://cricsheet.org/downloads/ipl_json.zip"
 response = requests.get(url)
+# Create a temporary directory
+temp_dir = tempfile.mkdtemp()
 with zipfile.ZipFile(io.BytesIO(response.content)) as z:
-    z.extractall("/Users/sanjeetkhurana/cricket/IPL STATS/ipl_male_json")
+    z.extractall(temp_dir)
 
 # Path to your JSON files
-json_path = "/Users/sanjeetkhurana/cricket/IPL STATS/ipl_male_json/*.json"
+json_path = f"{temp_dir}/*.json"
 json_files = glob.glob(json_path)
 
 # Lists to store all ball-by-ball data
