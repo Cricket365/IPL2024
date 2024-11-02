@@ -1,2 +1,2 @@
 # IPL2024
-Various stats and visuals for 2024 IPL to help understand the game better
+This code shows batter performance against various teams for 2024 season in IPL for filtered by players.
