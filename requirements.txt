@@ -1,7 +1,4 @@
 pandas
 plotly
 streamlit
-json
-glob
-os
 requests
