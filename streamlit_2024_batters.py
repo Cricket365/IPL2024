@@ -106,27 +106,40 @@ df = pd.DataFrame(all_balls)
 if 'date' in df.columns:
     df['date'] = pd.to_datetime(df['date'])
 
-# Filter for the 2024 season data
-IPL2024 = df[df['date'].dt.year == 2024].copy()
+# Extract unique years from the date column
+available_years = sorted(df['date'].dt.year.unique(), reverse=True)
 
-# Exclude wide balls from balls faced
-IPL2024['valid_ball'] = IPL2024['wides'] == 0
-IPL2024['balls_faced'] = IPL2024.groupby(['match_id', 'batter'])['valid_ball'].cumsum()
+# Streamlit app
+st.title("IPL Player Performance")
 
-# Calculate total runs scored per match for each player
-IPL2024['total_runs_scored'] = IPL2024.groupby(['match_id', 'batter'])['runs_batter'].transform('sum')
-# [Keep the existing code for data loading and processing]
+# Add year selection dropdown
+selected_year = st.selectbox("Select Year", options=available_years)
 
-def create_player_performance_chart(IPL2024, player_name):
+# Filter data for selected year
+year_data = df[df['date'].dt.year == selected_year].copy()
+
+# Calculate required statistics
+year_data['valid_ball'] = year_data['wides'] == 0
+year_data['balls_faced'] = year_data.groupby(['match_id', 'batter'])['valid_ball'].cumsum()
+year_data['total_runs_scored'] = year_data.groupby(['match_id', 'batter'])['runs_batter'].transform('sum')
+
+# Create a list of players for the selected year
+year_players = sorted(year_data['batter'].unique().tolist())
+year_players = [player for player in year_players if isinstance(player, str)]
+
+selected_player = st.selectbox("Select a player", options=year_players)
+
+# Keep your original create_player_performance_chart function
+def create_player_performance_chart(data, player_name):
     if player_name is None or player_name == '':
         return go.Figure(), (0, 0)
 
-    player_data_2024 = IPL2024[IPL2024['batter'].str.contains(player_name, case=False, na=False)].sort_values('date')
+    player_data = data[data['batter'].str.contains(player_name, case=False, na=False)].sort_values('date')
 
-    if player_data_2024.empty:
+    if player_data.empty:
         return go.Figure(), (0, 0)
 
-    player_performances = player_data_2024.groupby(['match_id', 'bowling_team', 'date', 'venue']).agg({
+    player_performances = player_data.groupby(['match_id', 'bowling_team', 'date', 'venue']).agg({
         'total_runs_scored': 'first',
         'balls_faced': 'max'
     }).reset_index()
@@ -176,7 +189,7 @@ def create_player_performance_chart(IPL2024, player_name):
     fig = go.Figure(data=traces)
 
     fig.update_layout(
-        title=f'{player_name}\'s Performances in IPL 2024',
+        title=f'{player_name}\'s Performances in IPL {selected_year}',
         xaxis_title='Opposition Team',
         yaxis_title='Runs Scored',
         barmode='stack',
@@ -190,20 +203,11 @@ def create_player_performance_chart(IPL2024, player_name):
 
     return fig, (total_runs, overall_strike_rate)
 
-# Streamlit app
-st.title("IPL 2024 Player Performance")
-
-# Create a list of players for the dropdown
-all_players = IPL2024['batter'].unique().tolist()
-all_players = [player for player in all_players if isinstance(player, str)]
-
-selected_player = st.selectbox("Select a player", options=all_players)
-
 if selected_player:
-    fig, (total_runs, overall_strike_rate) = create_player_performance_chart(IPL2024, selected_player)
+    fig, (total_runs, overall_strike_rate) = create_player_performance_chart(year_data, selected_player)
     
     # Display summary statistics
-    st.write(f"**Season Summary for {selected_player}:**")
+    st.write(f"**{selected_year} Season Summary for {selected_player}:**")
     st.write(f"Total Runs: {total_runs}")
     st.write(f"Overall Strike Rate: {overall_strike_rate}")
     
